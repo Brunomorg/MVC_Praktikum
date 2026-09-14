@@ -1,0 +1,185 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Pool-Verwaltung</title>
+    <!-- CSS-Datei einbinden -->
+    <link rel="stylesheet" href="{% static 'pool/css/style.css' %}">
+</head>
+<body>
+
+    <h1>{{ thema.titel }}</h1>
+
+    <!-- Add Person -->
+    <div class="card">
+    <h2>1. Person hinzufügen</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_person">
+        <div class="form-group">
+            {{ person_form.name }}
+        </div>
+        <button type="submit" class="btn btn-primary">Person hinzufügen</button>
+    </form>
+</div>
+
+    <!-- Add to Pool -->
+<div class="card">
+    <h2>2. Ausgabe eintragen</h2>
+    {% if personen %}
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_ausgabe">
+            
+            <div class="form-group">
+                <label>Person:</label>
+                {{ ausgabe_form.person }}
+            </div>
+            <div class="form-group">
+                <label>Betrag (€):</label>
+                {{ ausgabe_form.betrag }}
+            </div>
+            <div class="form-group">
+                <label>Beschreibung:</label>
+                {{ ausgabe_form.beschreibung }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Ausgabe eintragen</button>
+        </form>
+    {% else %}
+        <p style="color: #868e96; margin: 0;"><em>Bitte lege zuerst mindestens eine Person an.</em></p>
+    {% endif %}
+</div>
+    <!-- Overview -->
+<div class="card">
+    <h2>Übersicht</h2>
+    <div class="stats-grid">
+        <!-- Gesamtsumme -->
+        <div class="stat-card">
+            <div class="stat-label">Gesamtsumme aller Ausgaben</div>
+            <div class="stat-value">{{ gesamtausgaben|floatformat:2 }} €</div>
+        </div>
+
+        <!-- Pro-Kopf-Soll -->
+        <div class="stat-card accent">
+            <div class="stat-label">Pro-Kopf-Soll</div>
+            <div class="stat-value">{{ pro_kopf|floatformat:2 }} €</div>
+        </div>
+    </div>
+</div>
+
+    <!-- Table -->
+    <h2>Bisherige Ausgaben</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Person</th>
+            <th>Betrag</th>
+            <th>Beschreibung</th>
+            <th>Datum</th>
+            <th>Aktion</th> <!-- Neue Spalte -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for ausgabe in ausgaben %}
+            <tr>
+                <td>{{ ausgabe.person.name }}</td>
+                <td>{{ ausgabe.betrag }} €</td>
+                <td>{{ ausgabe.beschreibung }}</td>
+                <td>{{ ausgabe.datum|date:"d.m.Y H:i" }}</td>
+                <td>
+    <div class="action-group">
+        <!-- Bearbeiten-Link -->
+        <a href="{% url 'ausgabe_bearbeiten' ausgabe.id %}" class="btn btn-warning btn-sm">
+            Bearbeiten
+        </a>
+
+        <!-- Löschen-Formular -->
+        <form method="POST" class="form-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_ausgabe">
+            <input type="hidden" name="ausgabe_id" value="{{ ausgabe.id }}">
+            <button type="submit" class="btn btn-danger btn-sm">
+                Löschen
+            </button>
+        </form>
+    </div>
+</td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="5">Bisher wurden noch keine Ausgaben eingetragen.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- TABELLE: Ausgaben pro Person mit Löschen-Funktion -->
+<div class="card">
+    <h2>Ausgaben pro Person</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Person</th>
+                <th>Insgesamt ausgegeben</th>
+                <th>Differenz zum Pro-Kopf-Soll</th>
+                <th style="text-align: right;">Aktion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in personen_übersicht %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.ausgegeben|floatformat:2 }} €</td>
+                    <td>
+                        {% if p.saldo > 0.01 %}
+                            <span class="saldo-positiv">+{{ p.saldo|floatformat:2 }} € (bekommt Geld)</span>
+                        {% elif p.saldo < -0.01 %}
+                            <span class="saldo-negativ">{{ p.saldo|floatformat:2 }} € (schuldet Geld)</span>
+                        {% else %}
+                            <span>0.00 € (ausgeglichen)</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <form method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_person">
+                            <input type="hidden" name="person_id" value="{{ p.id }}">
+                            <button type="submit" class="btn btn-danger-outline btn-sm">Entfernen</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">Noch keine Personen vorhanden.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- KORREKTUR/AUSGLEICH: Wer zahlt wem wie viel -->
+<div class="card">
+    <h2>Wer schuldet wem wie viel?</h2>
+    {% if ausgleich_liste %}
+        <ul class="ausgleich-list">
+            {% for eintrag in ausgleich_liste %}
+                <li class="ausgleich-item">
+                    <span><strong>{{ eintrag.von }}</strong> schuldet <strong>{{ eintrag.an }}</strong> <strong>{{ eintrag.betrag }}€</strong></span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: #495057; margin: 0;">Es sind keine Ausgleichszahlungen notwendig (alle Ausgaben sind ausgeglichen).</p>
+    {% endif %}
+</div>
+
+<div style="margin-bottom: 24px;">
+    <a href="{% url 'themen_liste' %}" class="btn btn-primary btn-lg">
+        &larr; Zurück zur Übersicht
+    </a>
+</div>
+
+</body>
+</html>
