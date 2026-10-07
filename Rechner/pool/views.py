@@ -18,7 +18,6 @@ def topic_list(request):
         form = TopicForm(request.POST)
         if form.is_valid():
             # TODO Save the new topic to the database.
-            form.save()
 
             return redirect('topics_list')
     else:
