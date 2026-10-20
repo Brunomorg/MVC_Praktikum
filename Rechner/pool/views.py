@@ -5,31 +5,10 @@ from .forms import TopicForm, PersonForm, ExpenseForm
 
 
 # Display and create new topics.
+# TODO Implement topic_list view to show all topics and allow creation of new ones.
 def topic_list(request):
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'delete_topic':
-            topic_id = request.POST.get('topic_id')
-            if topic_id:
-                Topic.objects.filter(id=topic_id).delete()
-            return redirect('topics_list')
-
-        form = TopicForm(request.POST)
-        if form.is_valid():
-            # TODO Save the new topic to the database.
-
-            return redirect('topics_list')
-    else:
-        form = TopicForm()
-
-    # TODO Sort Objects by creation date
     
-    topics = Topic.objects.all()
-    return render(request, 'pool/themen_liste.html', {
-        'topics': topics,
-        'form': form,
-    })
+    
 
 
 # Show the details of a topic.

@@ -2,17 +2,13 @@ from django.db import models
 from django.db.models import Sum
 
 # Database entry for topics.
+#TODO add a field to show date of creation
 class Topic(models.Model):
-    title = models.CharField(max_length=200)
-    #TODO add a field to show date of creation
+
 
     
 
-    class Meta:
-        db_table = 'pool_thema'
 
-    def __str__(self):
-        return self.title
    
 
 
